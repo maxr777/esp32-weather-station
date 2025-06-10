@@ -22,14 +22,6 @@ void setup() {
   pmsSensor.begin(9600, SERIAL_8N1, 16, 17);
   Serial.begin(115200);
   
-  if (!rtc.begin()) {
-    Serial.println("RTC init fail");
-    while (1)
-      delay(10);
-  }
-
-  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
   if (!bme.begin(0x76)) {
     Serial.println("BME init fail");
     while (1)
@@ -127,22 +119,11 @@ const char* getPM100Quality(int q) {
 
 char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-bool screen1 = true;
-int counter = 0;
-
 void loop() {
-  DateTime now = rtc.now();
-  char date[50];
-  snprintf(date, sizeof(date), "%d-%d-%d %s", now.year(), now.month(), now.day(), daysOfTheWeek[now.dayOfTheWeek()]);
-
-  char time[20];
-  snprintf(time, sizeof(time), "%02d:%02d", now.hour(), now.minute());
-
   double temp = bme.readTemperature(), pres = bme.readPressure(), hum = bme.readHumidity();
-  char temp_str[20], bme_str[20], hum_str[20];
-  snprintf(temp_str, sizeof(temp_str), "T: %.1f C", temp);
-  snprintf(bme_str, sizeof(bme_str), "P: %.0f hPa", pres/100);
-  snprintf(hum_str, sizeof(hum_str), "H: %.0f%%", hum);
+  char temp_str[50];
+  char ch=176;
+  snprintf(temp_str, sizeof(temp_str), "%.1f%c  %.0f%%  %.0fhPa", temp, ch, hum, pres/100);
 
   char pm10_str[20], pm25_str[20], pm100_str[20];
   if(readPMSdata()){
@@ -153,27 +134,12 @@ void loop() {
 
   u8g2.clearBuffer();
 
-  if (screen1){
-    u8g2.drawStr(0, 8, date);
-    u8g2.drawStr(0, 28, temp_str);
-    u8g2.drawStr(0, 40, bme_str);
-    u8g2.drawStr(0, 52, hum_str);
-    u8g2.drawStr(96, 64, time);
-  } else {
-    u8g2.drawStr(0, 8, date);
-    u8g2.drawStr(0, 28, pm10_str);
-    u8g2.drawStr(0, 40, pm25_str);
-    u8g2.drawStr(0, 52, pm100_str);
-    u8g2.drawStr(96, 64, time);
-  }
+  u8g2.drawStr(0, 8, temp_str);
+  u8g2.drawStr(0, 32, pm10_str);
+  u8g2.drawStr(0, 44, pm25_str);
+  u8g2.drawStr(0, 56, pm100_str);
 
   u8g2.sendBuffer();
-
-  ++counter;
-  if(counter >= 7) {
-    counter = 0;
-    screen1 = !screen1;
-  }
 
   delay(1000);
 }
