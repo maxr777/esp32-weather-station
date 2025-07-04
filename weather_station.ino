@@ -54,13 +54,12 @@ boolean readPMSdata() {
     return false;
   }
   
-  // Read a byte at a time until we get to the special '0x42' start byte
+  // 0x42 = start byte
   if (pmsSensor.peek() != 0x42) {
     pmsSensor.read();
     return false;
   }
   
-  // Now read all 32 bytes
   if (pmsSensor.available() < 32) {
     return false;
   }
@@ -68,20 +67,18 @@ boolean readPMSdata() {
   uint8_t buffer[32];
   pmsSensor.readBytes(buffer, 32);
   
-  // Calculate checksum
+  // checksum
   uint16_t sum = 0;
   for (uint8_t i = 0; i < 30; i++) {
     sum += buffer[i];
   }
   
-  // The data comes in endian'd, this solves it so it works on all platforms
   uint16_t buffer_u16[15];
   for (uint8_t i = 0; i < 15; i++) {
     buffer_u16[i] = buffer[2 + i*2 + 1];
     buffer_u16[i] += (buffer[2 + i*2] << 8);
   }
   
-  // Put it into a nice struct
   memcpy((void *)&data, (void *)buffer_u16, 30);
   
   if (sum != data.checksum) {
